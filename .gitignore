@@ -1,0 +1,10 @@
+# pytest cache #
+__pycache__/
+.cache
+
+# Virtual Environment #
+.venv
+
+# OS generated files #
+.DS_Store
+

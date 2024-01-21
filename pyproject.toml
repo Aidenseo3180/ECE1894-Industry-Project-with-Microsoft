@@ -1,0 +1,16 @@
+[tool.poetry]
+name = "industry"
+version = "0.0.1"
+description = "industry project tool"
+authors = ["Aiden <minwoo3180@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+pytest = "^7.4.4"
+pytest-xdist = "^3.5.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
