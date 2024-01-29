@@ -1,6 +1,7 @@
 # pytest cache #
-__pycache__/
+__pycache__
 .cache
+.pytest_cache
 
 # Virtual Environment #
 .venv
