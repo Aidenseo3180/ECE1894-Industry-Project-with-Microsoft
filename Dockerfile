@@ -3,7 +3,13 @@ ARG PYTHON_VERSION=3.12
 # getting base image
 FROM python:${PYTHON_VERSION}-alpine
 
+# keep docker image running
+ENTRYPOINT ["tail", "-f", "/dev/null"]
+
 ARG POETRY_VERSION=1.7.1
+
+# tar for kubectl cp command
+
 
 # install system dependencies
 # you need libffi-dev because some dependencies from poetry requires C compiler to download
@@ -20,6 +26,3 @@ RUN poetry install --no-dev \
 
 # copy the current directory contents into the container at /code
 COPY . /code
-
-# run to test if container runs
-CMD [ "echo", "Hello World" ]
