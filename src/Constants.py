@@ -1,2 +1,2 @@
-CUSTOM_IMAGE = "myimage1"
-DEFAULT_NAMESPACE = "default_namespace"
+CUSTOM_IMAGE_NAME = "myimage1"
+NAMESPACE_NAME = "default-namespace"
