@@ -13,7 +13,7 @@ def test_k8(pass_k8_info):
     custom_image, name = pass_k8_info
 
     # generate k8 pods
-    a, b = generate_k8_pods(given_custom_image=custom_image, given_namespace_name=name)
+    state = generate_k8_pods(given_custom_image=custom_image, given_namespace_name=name)
 
-    assert(custom_image == a and name == b)
+    assert(state == True)
 
