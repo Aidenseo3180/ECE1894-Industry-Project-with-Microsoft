@@ -1,4 +1,5 @@
 from kubernetes import client, config
+import logging
 
 def generate_k8_pods(given_custom_image, given_namespace_name):
     #NOTE Assuming image and cluster already exist
@@ -22,29 +23,24 @@ def generate_k8_pods(given_custom_image, given_namespace_name):
     #############
     # Namespace #
     #############
-    # create the namespace if doesn't exist
-    namespaces = v1.list_namespace()
-    all_namespaces = []
-    for ns in namespaces.items:
-        all_namespaces.append(ns.metadata.name)
-
-    # add namespace if doesn't exist
+    # create the namespace
     # Like pod.yaml, there's namespace.yaml too. Below is for the yaml specifically designed to create namespace
-    if given_namespace_name not in all_namespaces:
-        print("---- Namespace doesn't exist, so one is created ----")
+    try:
         # NOTE namespace and pod are different. YAML can be created for either the namespace or the pod. This is like creating YAML of namespace
         # create metadata of namespace
         namespace_metadata = client.V1ObjectMeta(name=given_namespace_name)
         v1.create_namespace(
             client.V1Namespace(metadata=namespace_metadata)
         )
+    except Exception:
+        return False  # return immediately if given namespace already exists
 
     # Checking if namespace is successfully added
     # Equivalent to: kubectl get namespace
     namespaces = v1.list_namespace()
-    print("---- Checking existing namespaces ----")
+    logging.info('---- Namespace Successfully Added. List of Namespaces Below ----')
     for ns in namespaces.items:
-        print(ns.metadata.name)
+        logging.info(ns.metadata.name)
 
     ###############################
     # Adding a pod with namespace #
@@ -61,18 +57,18 @@ def generate_k8_pods(given_custom_image, given_namespace_name):
     if 'private-reg' not in all_pod_with_namespace:
         # create a pod body by combinding metadata with spec
         pod_body = client.V1Pod(api_version='v1', kind='Pod', metadata=pod_metadata, spec=pod_spec)
-        print("---- Pod created ----")
+        logging.info('---- Pod Successfully Created ----')
         v1.create_namespaced_pod(namespace=given_namespace_name, body=pod_body)
 
-    # Print pods running
     # Equivalent to: kubectl get pods --namespace <Namespace>
-    print("---- Running Pods with namespace ----")
+    logging.info('---- List of Running Pods with Namespace ----')
     pod_with_namespace = v1.list_namespaced_pod(namespace=given_namespace_name)
     for pod_ns in pod_with_namespace.items:
-        print(pod_ns.metadata.name)
+        logging.info(pod_ns.metadata.name)
 
-    # Delete pod at the end
-    v1.delete_namespaced_pod(namespace=given_namespace_name, name='private-reg')
+    # Deleting namespace at the end deletes all the related pods
+    # v1.delete_namespaced_pod(namespace=given_namespace_name, name='private-reg')
+    v1.delete_namespace(name=given_namespace_name)
 
-    return given_custom_image, given_namespace_name
+    return True
 
