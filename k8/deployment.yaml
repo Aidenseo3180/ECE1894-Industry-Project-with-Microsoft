@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ms-deployment
+  namespace: ms-namespace
+  labels:
+    app: ms
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: ms
+  template:
+    metadata:
+      labels:
+        app: ms
+    spec:
+      containers:
+      - name: ms-container
+        image: myimage1
+        imagePullPolicy: Never
+        volumeMounts:
+        - name: config-volume       # name of the mount
+          mountPath: /code/test     # location to mount the volume
+      volumes:
+        - name: config-volume  # name of volume
+          configMap:
+            name: ms-config    # name of the configMap
+            items:
+              - key: hello_world.py
+                path: hello_world.py
+
