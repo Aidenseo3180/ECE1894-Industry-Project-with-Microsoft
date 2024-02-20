@@ -11,5 +11,6 @@ def pass_k8_info(request)->list:
 
     custom_image = str(request.config.getoption("--custom_image"))
     name = str(request.config.getoption("--namespace"))
+    num_pods = int(request.config.getoption("--num_pods"))
     
-    return [custom_image, name]
+    return [custom_image, name, num_pods]

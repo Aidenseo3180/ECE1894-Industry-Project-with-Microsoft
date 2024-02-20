@@ -10,10 +10,10 @@ def test_k8(pass_k8_info):
     :return: None
     """
 
-    custom_image, name = pass_k8_info
+    custom_image, name, num_pods = pass_k8_info
 
     # generate k8 pods
-    state = generate_k8_pods(given_custom_image=custom_image, given_namespace_name=name)
+    state = generate_k8_pods(given_custom_image=custom_image, given_namespace_name=name, num_pods=num_pods)
 
     assert(state == True)
 
