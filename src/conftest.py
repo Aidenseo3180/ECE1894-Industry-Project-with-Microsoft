@@ -1,10 +1,13 @@
 from Constants import NAMESPACE_NAME, CUSTOM_IMAGE_NAME
 import logging
 
+LIST_OF_TEST_FILES = []
+
+# Find the location of test files, put into configmap
 def pytest_collection_modifyitems(session, config, items):
     logging.info("Items listed below:")
     for item in items:
-        logging.info(item.path)
+        LIST_OF_TEST_FILES.append(item.location[0])
 
 def pytest_addoption(parser):
     parser.addoption(
