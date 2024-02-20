@@ -1,5 +1,6 @@
 from kubernetes import client, config
 from Constants import NAMESPACE_NAME
+from conftest import LIST_OF_TEST_FILES
 import logging
 import uuid
 
@@ -46,13 +47,20 @@ def generate_k8_pods(given_custom_image, given_namespace_name, num_pods):
         namespace=given_namespace_name
     )
 
-    config_map_data = {
-'hello_world.py':'''
-def hello_world_function():
-    return "Hello World"
-def test_hello_world():
-    assert hello_world_function() == "Hello World"
-'''}
+    # --- Put test files as key-value pair to Config Map
+    # dict that stores data of configMap
+    config_map_data = {}
+    for test_file_path in LIST_OF_TEST_FILES:
+        # Relative Path
+        file = open(test_file_path, 'r')
+        file_content = file.read()
+        # split file_path by slash, read the last occurence
+        file_name = test_file_path.rsplit('/', 1)
+        config_map_data.update({file_name[1]:file_content})
+        file.close()
+
+    logging.info("---- List of test files that will be added to config map in key-value pair ----")
+    logging.info(config_map_data)
 
     config_map_body = client.V1ConfigMap(
         api_version='v1',
@@ -106,12 +114,15 @@ def test_hello_world():
     containers.append(container1)
 
     # Volume Config Map Info
-    items_list = []  # Add here if there are more key - value pairs
-    item = client.V1KeyToPath(
-        key='hello_world.py',
-        path='hello_world.py'
-    )
-    items_list.append(item)
+    items_list = []
+    for test_file_path in LIST_OF_TEST_FILES:
+        # Get name of file, give to item as key-path pair (to include files in configMap)
+        file_name = test_file_path.rsplit('/', 1)
+        item = client.V1KeyToPath(
+            key=file_name[1],
+            path=file_name[1]
+        )
+        items_list.append(item)
 
     volumes_config_map_info = client.V1ConfigMapVolumeSource(
         name='ms-config',

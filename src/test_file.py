@@ -1,5 +1,5 @@
-from main.k8_client import generate_k8_pods
-from test.pytest_fixtures import pass_k8_info
+from k8_client import generate_k8_pods
+from pytest_fixtures import pass_k8_info
 
 def test_k8(pass_k8_info):
     """
