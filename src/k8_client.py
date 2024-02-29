@@ -1,10 +1,12 @@
 from kubernetes import client, config
 from Constants import NAMESPACE_NAME
-from conftest import LIST_OF_TEST_FILES
 import logging
 import uuid
+from pathlib import Path
 
-def generate_k8_pods(given_custom_image, given_namespace_name, num_pods):
+
+
+def generate_k8_pods(given_custom_image, given_namespace_name, num_pods, list_filename):
     #NOTE Assuming image and cluster already exist
 
     # bring in k8 configuration to code so that it can handle k8
@@ -50,12 +52,14 @@ def generate_k8_pods(given_custom_image, given_namespace_name, num_pods):
     # --- Put test files as key-value pair to Config Map
     # dict that stores data of configMap
     config_map_data = {}
-    for test_file_path in LIST_OF_TEST_FILES:
+    for test_file_path in list_filename:
         # Relative Path
         file = open(test_file_path, 'r')
         file_content = file.read()
         # split file_path by slash, read the last occurence
-        file_name = test_file_path.rsplit('/', 1)
+        
+        file_name = Path(test_file_path).name
+        
         config_map_data.update({file_name[1]:file_content})
         file.close()
 
@@ -114,13 +118,14 @@ def generate_k8_pods(given_custom_image, given_namespace_name, num_pods):
     containers.append(container1)
 
     # Volume Config Map Info
+    ##
     items_list = []
-    for test_file_path in LIST_OF_TEST_FILES:
+    for test_file_path in list_filename:
         # Get name of file, give to item as key-path pair (to include files in configMap)
-        file_name = test_file_path.rsplit('/', 1)
+        file_name = Path(test_file_path).name
         item = client.V1KeyToPath(
-            key=file_name[1],
-            path=file_name[1]
+            key=file_name,
+            path=file_name
         )
         items_list.append(item)
 
