@@ -1,3 +1,5 @@
+def example_function():
+    return True
 
 def test_k8():
     """
@@ -7,6 +9,5 @@ def test_k8():
 
     :return: None
     """
-    state = True
-    assert(state == True)
+    assert(example_function() == True)
 

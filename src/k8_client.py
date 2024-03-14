@@ -1,10 +1,6 @@
 from kubernetes import client, config
-from Constants import NAMESPACE_NAME
 import logging
-import uuid
 from pathlib import Path
-
-
 
 def generate_k8_pods(given_custom_image, given_namespace_name, num_pods, list_filename):
     #NOTE Assuming image and cluster already exist
@@ -19,17 +15,15 @@ def generate_k8_pods(given_custom_image, given_namespace_name, num_pods, list_fi
     # --- Creation of namespace
     logging.info('---- Namespace Creation Started ----')
 
-    # If no namespace is given, give unique namespace
-    if given_namespace_name == NAMESPACE_NAME:
-        given_namespace_name = given_namespace_name + '-' + str(uuid.uuid4())
-
     try:
         namespace_metadata = client.V1ObjectMeta(name=given_namespace_name)
         apps_v1.create_namespace(
             client.V1Namespace(metadata=namespace_metadata)
         )
     except Exception:
-        # return immediately if given namespace already exists
+        # return immediately if given namespace already exists OR environment setup is incorrect
+        # Make sure to have a running cluster with image
+        logging.info('---- Creation Failed.... Terminating ----')
         return False
 
     # --- Check namespace
@@ -56,11 +50,10 @@ def generate_k8_pods(given_custom_image, given_namespace_name, num_pods, list_fi
         # Relative Path
         file = open(test_file_path, 'r')
         file_content = file.read()
-        # split file_path by slash, read the last occurence
         
         file_name = Path(test_file_path).name
         
-        config_map_data.update({file_name[1]:file_content})
+        config_map_data.update({file_name:file_content})
         file.close()
 
     logging.info("---- List of test files that will be added to config map in key-value pair ----")
@@ -193,8 +186,13 @@ def generate_k8_pods(given_custom_image, given_namespace_name, num_pods, list_fi
     #     logging.info(np.metadata.name)
 
     # --- Deleting namespace at the end deletes all the related pods
-    apps_v1.delete_namespace(name=given_namespace_name)
-    logging.info('---- Namespace Successfully Deleted ----')
+    # apps_v1.delete_namespace(name=given_namespace_name)
+    # logging.info('---- Namespace Successfully Deleted ----')
 
     return True
 
+def delete_k8_deployment(given_namespace_name):
+    # --- Deleting namespace at the end deletes all the related pods
+    apps_v1 = client.CoreV1Api()
+    apps_v1.delete_namespace(name=given_namespace_name)
+    logging.info('---- Namespace Successfully Deleted ----')
