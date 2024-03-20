@@ -60,7 +60,7 @@ def generate_k8_pods(given_custom_image, given_namespace_name, num_pods, list_fi
         
         file_name = Path(test_file_path).name
         
-        config_map_data.update({file_name[1]:file_content})
+        config_map_data.update({file_name:file_content})
         file.close()
 
     logging.info("---- List of test files that will be added to config map in key-value pair ----")
