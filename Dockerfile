@@ -14,8 +14,9 @@ RUN apk add gcc musl-dev libffi-dev \
 && pip install "poetry==${POETRY_VERSION}"
 
 # copy only requirements to cache them in docker layer
+# pod_socketserver.py to instantiate gateway through sockets
 WORKDIR /code
-COPY poetry.lock pyproject.toml /code/
+COPY poetry.lock pyproject.toml /src/ms_socketserver.py /code/
 
 # project initialization
 RUN poetry config virtualenvs.create false \
