@@ -15,8 +15,9 @@ RUN apk add gcc musl-dev libffi-dev \
 
 # copy only requirements to cache them in docker layer
 # pod_socketserver.py to instantiate gateway through sockets
+# conftest.py includes custom options
 WORKDIR /code
-COPY poetry.lock pyproject.toml /src/ms_socketserver.py /code/
+COPY conftest.py poetry.lock pyproject.toml /src/ms_socketserver.py /code/
 
 # project initialization
 RUN poetry config virtualenvs.create false \

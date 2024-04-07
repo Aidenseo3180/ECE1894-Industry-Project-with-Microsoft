@@ -1,4 +1,4 @@
-from Constants import NAMESPACE_NAME, CUSTOM_IMAGE_NAME
+from Constants import NAMESPACE_NAME
 from k8_client import generate_k8_pods, delete_k8_deployment
 import logging
 import pytest
@@ -20,12 +20,15 @@ ws_list = []  # list of streams for each pod
 
 def pytest_xdist_setupnodes(config: pytest.Config, specs: list[XSpec]):
 
+    if config.option.ktx != "pod":
+        return
+
     # **********
     # * Set up *
     # **********
     global selected_namespace
-    list_of_test_files = ['src/test_hello_world1.py', 'src/test_hello_world2.py']  # FIXME: Change this later
-
+    list_of_test_files = config.option.file_or_dir   # List of pytest files to run provided through the terminal
+    list_of_test_files.append("src/Constants.py")    # Move Constants.py file because it's used by conftest.py in docker image
     custom_image = config.option.custom_image
     selected_namespace = config.option.namespace
 
@@ -61,7 +64,6 @@ def pytest_xdist_setupnodes(config: pytest.Config, specs: list[XSpec]):
 
         # Remote address - localhost : TCP port pair
         peer_pair = ws.sock.sock.getpeername()
-        local_host_ip = peer_pair[0]
         assigned_port = peer_pair[1]
 
         # NOTE: select the "available TCP port" using temporary sockets
@@ -93,7 +95,7 @@ def pytest_xdist_setupnodes(config: pytest.Config, specs: list[XSpec]):
 
         logging.info("Server file listening to port")
 
-        specs[idx].socket = '{}:{}'.format(local_host_ip, available_port)
+        specs[idx].socket = '127.0.0.1:{}'.format(available_port)
         specs[idx].popen = False
 
         # NOTE: Bypass xdist checking whether the directory exists inside the k8 pod
@@ -101,10 +103,16 @@ def pytest_xdist_setupnodes(config: pytest.Config, specs: list[XSpec]):
         config.pluginmanager.get_plugin('dsession').nodemanager.roots.append(root)
         config.pluginmanager.get_plugin('dsession').nodemanager._rsynced_specs.add((specs[idx], root))
 
+    # TODO: Give some time for threads to port-forward and run server.py from each pod
+
+
 def pytest_sessionfinish(session):
 
     # NOTE: Check if Controller
     if xdist.is_xdist_controller(session):
+
+        if session.config.option.ktx != "pod":
+            return
 
         # Kill process and child processes
         for process in process_list:
@@ -115,11 +123,3 @@ def pytest_sessionfinish(session):
             ws.close()
 
         delete_k8_deployment(selected_namespace)
-
-def pytest_addoption(parser):
-    parser.addoption(
-        "--namespace", action="store", default=NAMESPACE_NAME, help="Define the namespace of pods"
-    )
-    parser.addoption(
-        "--custom_image", action="store", default=CUSTOM_IMAGE_NAME, help="Define the name of the custom image"
-    )

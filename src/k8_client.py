@@ -1,7 +1,7 @@
 from kubernetes import client, config
 import logging
 from pathlib import Path
-from time import sleep
+from tenacity import retry, stop_after_attempt, wait_fixed
 
 def generate_k8_pods(given_custom_image, given_namespace_name, num_pods, list_filename):
     # NOTE: Assuming image and cluster already exist
@@ -26,7 +26,6 @@ def generate_k8_pods(given_custom_image, given_namespace_name, num_pods, list_fi
         return False
 
     # --- Namespace creation
-    namespaces = apps_v1.list_namespace()
     logging.info('---- Namespace Successfully Added ----')
 
     # **************
@@ -163,15 +162,39 @@ def generate_k8_pods(given_custom_image, given_namespace_name, num_pods, list_fi
         namespace=given_namespace_name, 
         body=body
     )
+
+    # NOTE: wait until all the pods are in ready state    
+    try:
+        retry_check_pod_status(apps_v1, given_namespace_name)
+    except:
+        logging.info('---- Environment Failed to Initialize. Deleting Allocated Resources... ----')
+        delete_k8_deployment(given_namespace_name)
+        raise Exception
+
     logging.info('---- Deployment Successfully Created ----')
-
-    # NOTE: wait 2 sec to give enough time for K8 deployment to fully setup
-    sleep(2)
-
-    return True
 
 def delete_k8_deployment(given_namespace_name):
     # --- Deleting namespace at the end deletes all the related pods
     apps_v1 = client.CoreV1Api()
     apps_v1.delete_namespace(name=given_namespace_name)
     logging.info('---- Namespace Successfully Deleted ----')
+
+@retry(
+    wait=wait_fixed(2),
+    stop=stop_after_attempt(10)
+)
+def retry_check_pod_status(apps_v1, given_namespace_name):
+    # NOTE: Check if pods are in ready state
+    logging.info('---- Waiting For Pods to be Prepared... ----')
+    cnt = 0
+    list_namespace_pod = apps_v1.list_namespaced_pod(given_namespace_name)
+    if list_namespace_pod.items:
+        for element in list_namespace_pod.items:
+            pod_status = element.status.container_statuses[0]
+            if pod_status.ready is True and pod_status.started is True:
+                cnt += 1
+
+        if cnt == len(list_namespace_pod.items):
+            return
+
+    raise Exception
