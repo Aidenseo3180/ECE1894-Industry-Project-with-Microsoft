@@ -14,6 +14,7 @@ import signal
 from execnet import XSpec
 from pathlib import Path
 import socket
+from time import sleep
 
 process_list = []  # list of subprocesses responsible for port-forwarding
 ws_list = []  # list of streams for each pod
@@ -81,7 +82,7 @@ def pytest_xdist_setupnodes(config: pytest.Config, specs: list[XSpec]):
 
         logging.info("Subprocess running for port-forwarding")
 
-        # TODO: Running socketserver code from the pod, later change this command much more flexible (the .py file part)
+        # NOTE: Run the server.py from each pod to listen to localhost
         commands = [
             "python /code/ms_socketserver.py :{}".format(assigned_port)
         ]
@@ -103,12 +104,13 @@ def pytest_xdist_setupnodes(config: pytest.Config, specs: list[XSpec]):
         config.pluginmanager.get_plugin('dsession').nodemanager.roots.append(root)
         config.pluginmanager.get_plugin('dsession').nodemanager._rsynced_specs.add((specs[idx], root))
 
-    # TODO: Give some time for threads to port-forward and run server.py from each pod
+    # NOTE: Give extra time for threads to port-forward and run server.py from each pod
+    sleep(2)
 
 
 def pytest_sessionfinish(session):
 
-    # NOTE: Check if Controller
+    # NOTE: If controller, clean the allocated resources
     if xdist.is_xdist_controller(session):
 
         if session.config.option.ktx != "pod":
