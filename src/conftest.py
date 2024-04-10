@@ -105,6 +105,7 @@ def pytest_xdist_setupnodes(config: pytest.Config, specs: list[XSpec]):
         config.pluginmanager.get_plugin('dsession').nodemanager._rsynced_specs.add((specs[idx], root))
 
     # NOTE: Give extra time for threads to port-forward and run server.py from each pod
+    logging.info('---- Give Extra Time for Threads to Run Tasks... ----')
     sleep(2)
 
 

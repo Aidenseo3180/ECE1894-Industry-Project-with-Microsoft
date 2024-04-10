@@ -91,7 +91,7 @@ def generate_k8_pods(given_custom_image, given_namespace_name, num_pods, list_fi
     container1 = client.V1Container(
         name='ms-container', 
         image=given_custom_image, 
-        image_pull_policy='Never',
+        image_pull_policy='IfNotPresent',
         volume_mounts=volume_mount_list
     )
     containers.append(container1)
