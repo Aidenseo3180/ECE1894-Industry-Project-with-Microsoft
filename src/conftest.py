@@ -99,6 +99,8 @@ def pytest_xdist_setupnodes(config: pytest.Config, specs: list[XSpec]):
         specs[idx].socket = '127.0.0.1:{}'.format(available_port)
         specs[idx].popen = False
 
+        
+
         # NOTE: Bypass xdist checking whether the directory exists inside the k8 pod
         root = Path('src')   # TODO: Change this to sync with k8_client's configmap
         config.pluginmanager.get_plugin('dsession').nodemanager.roots.append(root)
@@ -119,7 +121,10 @@ def pytest_sessionfinish(session):
 
         # Kill process and child processes
         for process in process_list:
-            os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+           #process.send_signal(signal.CTRL_BREAK_EVENT)
+
+            process.kill()
+            #os.kill(os.getpgid(process.pid), signal.SIGTERM)
 
         # Close the stream
         for ws in ws_list:

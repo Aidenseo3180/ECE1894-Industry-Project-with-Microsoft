@@ -173,6 +173,14 @@ def generate_k8_pods(given_custom_image, given_namespace_name, num_pods, list_fi
 
     logging.info('---- Deployment Successfully Created ----')
 
+<<<<<<< Updated upstream
+=======
+    # NOTE: wait 2 sec to give enough time for K8 deployment to fully setup
+    sleep(10)
+
+    return True
+
+>>>>>>> Stashed changes
 def delete_k8_deployment(given_namespace_name):
     # --- Deleting namespace at the end deletes all the related pods
     apps_v1 = client.CoreV1Api()
