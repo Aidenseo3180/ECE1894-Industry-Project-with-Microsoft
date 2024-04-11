@@ -15,6 +15,7 @@ from execnet import XSpec
 from pathlib import Path
 import socket
 from time import sleep
+import platform
 
 process_list = []  # list of subprocesses responsible for port-forwarding
 ws_list = []  # list of streams for each pod
@@ -119,7 +120,12 @@ def pytest_sessionfinish(session):
 
         # Kill process and child processes
         for process in process_list:
-            os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+
+            if platform.system() == 'Windows':
+                process.kill()
+            else:
+                os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+
 
         # Close the stream
         for ws in ws_list:
