@@ -123,12 +123,10 @@ def pytest_sessionfinish(session):
 
         # Kill process and child processes
         for process in process_list:
-
             if platform.system() == 'Windows':
                 process.kill()
             else:
                 os.killpg(os.getpgid(process.pid), signal.SIGTERM)
-
 
         # Close the stream
         for ws in ws_list:
