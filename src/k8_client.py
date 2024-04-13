@@ -1,9 +1,11 @@
 from kubernetes import client, config
 import logging
 from pathlib import Path
+import uuid
 from tenacity import retry, stop_after_attempt, wait_fixed
 
-def generate_k8_pods(given_custom_image, given_namespace_name, num_pods, list_filename):
+
+def generate_k8_pods(given_custom_images, given_namespace_name, num_pods, list_filename):
     # NOTE: Assuming image and cluster already exist
 
     config.load_kube_config()
@@ -41,15 +43,20 @@ def generate_k8_pods(given_custom_image, given_namespace_name, num_pods, list_fi
 
     # --- Put the content of the test files as key-value pair to Config Map
     config_map_data = {}  # dictionary to store data of configMap
-    for test_file_path in list_filename:
-        # Relative Path
-        file = open(test_file_path, 'r')
-        file_content = file.read()
-        
-        file_name = Path(test_file_path).name
-        
-        config_map_data.update({file_name:file_content})
-        file.close()
+    try:
+        for test_file_path in list_filename:
+            # Relative Path
+            file = open(test_file_path, 'r')
+            file_content = file.read()
+            
+            file_name = Path(test_file_path).name
+            
+            config_map_data.update({file_name:file_content})
+            file.close()
+    except Exception:
+        logging.info('---- Test File Not Found, Deleting Allocated Resources... ----')
+        delete_k8_deployment(given_namespace_name)
+        raise Exception
 
     config_map_body = client.V1ConfigMap(
         api_version='v1',
@@ -68,116 +75,131 @@ def generate_k8_pods(given_custom_image, given_namespace_name, num_pods, list_fi
     # ***********************
     # * Adding a Deployment *
     # ***********************
-    logging.info('---- Deployment Creation Started ----')
-    
-    # --- METADATA
-    delpoyment_body_metadata = client.V1ObjectMeta(
-        name='ms-deployment', 
-        namespace=given_namespace_name, 
-        labels={'app':'ms'}
-    )
 
-    # --- INNER SPEC-CONTAINER
-    # Volume Mount List
-    volume_mount_list = []
-    volume_mount1 = client.V1VolumeMount(
-        name='config-volume',
-        mount_path='/code/src'
-    )
-    volume_mount_list.append(volume_mount1)
+    if num_pods < len(given_custom_images):
+        logging.info("---- Not enough workers. Terminating... ----")
+        raise ValueError('Not Enough Workers Given')
 
-    # Container inside the inner spec of template
-    containers = []
-    container1 = client.V1Container(
-        name='ms-container', 
-        image=given_custom_image, 
-        image_pull_policy='IfNotPresent',
-        volume_mounts=volume_mount_list
-    )
-    containers.append(container1)
+    num_pods_allocated = num_pods // len(given_custom_images)
+    for idx, custom_image in enumerate(given_custom_images):
 
-    # Volume Config Map Info
-    items_list = []
-    for test_file_path in list_filename:
-        # Get name of file, give to item as key-path pair (to include files in configMap)
-        file_name = Path(test_file_path).name
-        item = client.V1KeyToPath(
-            key=file_name,
-            path=file_name
+        if idx == len(given_custom_images) - 1:
+            num_pods_allocated = num_pods
+        
+        num_pods = num_pods - num_pods_allocated
+
+        logging.info('---- Deployment Creation Started ----')
+        
+        # --- METADATA
+        delpoyment_body_metadata = client.V1ObjectMeta(
+            name=f'ms-deployment-{uuid.uuid4()}', 
+            namespace=given_namespace_name, 
+            labels={'app':'ms'}
         )
-        items_list.append(item)
 
-    volumes_config_map_info = client.V1ConfigMapVolumeSource(
-        name='ms-config',
-        items=items_list
-    )
+        # --- INNER SPEC-CONTAINER
+        # Volume Mount List
+        volume_mount_list = []
+        volume_mount1 = client.V1VolumeMount(
+            name='config-volume',
+            mount_path='/code/src'
+        )
+        volume_mount_list.append(volume_mount1)
 
-    # Volume that goes into inner spec
-    volume_list = []
-    volume1 = client.V1Volume(
-        name='config-volume',
-        config_map=volumes_config_map_info
-    )
-    volume_list.append(volume1)
+        # Container inside the inner spec of template
+        containers = []
+        container1 = client.V1Container(
+            name='ms-container', 
+            image=custom_image, 
+            image_pull_policy='IfNotPresent',
+            volume_mounts=volume_mount_list
+        )
+        containers.append(container1)
 
-    spec_template_spec = client.V1PodSpec(
-        containers=containers,
-        volumes=volume_list
-    )
+        # Volume Config Map Info
+        items_list = []
+        for test_file_path in list_filename:
+            # Get name of file, give to item as key-path pair (to include files in configMap)
+            file_name = Path(test_file_path).name
+            item = client.V1KeyToPath(
+                key=file_name,
+                path=file_name
+            )
+            items_list.append(item)
 
-    # --- SPEC-SELECTOR-MATCH LABEL
-    spec_selector = client.V1LabelSelector(
-        match_labels={'app':'ms'}
-    )
+        volumes_config_map_info = client.V1ConfigMapVolumeSource(
+            name='ms-config',
+            items=items_list
+        )
 
-    # --- TEMPLATE
-    template_metadata = client.V1ObjectMeta(
-        labels={'app':'ms'}
-    )
-    spec_template = client.V1PodTemplateSpec(
-        metadata=template_metadata, 
-        spec=spec_template_spec
-    )
+        # Volume that goes into inner spec
+        volume_list = []
+        volume1 = client.V1Volume(
+            name='config-volume',
+            config_map=volumes_config_map_info
+        )
+        volume_list.append(volume1)
 
-    # --- SPEC
-    deployment_body_spec = client.V1DeploymentSpec(
-        replicas=num_pods, 
-        selector=spec_selector, 
-        template=spec_template
-    )
+        spec_template_spec = client.V1PodSpec(
+            containers=containers,
+            volumes=volume_list
+        )
 
-    # --- CONFIG & CLIENT
-    core_v1 = client.AppsV1Api()
+        # --- SPEC-SELECTOR-MATCH LABEL
+        spec_selector = client.V1LabelSelector(
+            match_labels={'app':'ms'}
+        )
 
-    # --- ENTIRE YAML
-    body = client.V1Deployment(
-        api_version='apps/v1', 
-        kind='Deployment', 
-        metadata=delpoyment_body_metadata, 
-        spec=deployment_body_spec
-    )
+        # --- TEMPLATE
+        template_metadata = client.V1ObjectMeta(
+            labels={'app':'ms'}
+        )
+        spec_template = client.V1PodTemplateSpec(
+            metadata=template_metadata, 
+            spec=spec_template_spec
+        )
 
-    # --- CREATE DEPLOYMENT
-    core_v1.create_namespaced_deployment(
-        namespace=given_namespace_name, 
-        body=body
-    )
+        # --- SPEC
+        deployment_body_spec = client.V1DeploymentSpec(
+            replicas=num_pods_allocated, 
+            selector=spec_selector, 
+            template=spec_template
+        )
 
-    # NOTE: wait until all the pods are in ready state    
-    try:
-        retry_check_pod_status(apps_v1, given_namespace_name)
-    except:
-        logging.info('---- Environment Failed to Initialize. Deleting Allocated Resources... ----')
-        delete_k8_deployment(given_namespace_name)
-        raise Exception
+        # --- CONFIG & CLIENT
+        core_v1 = client.AppsV1Api()
 
-    logging.info('---- Deployment Successfully Created ----')
+        # --- ENTIRE YAML
+        body = client.V1Deployment(
+            api_version='apps/v1', 
+            kind='Deployment', 
+            metadata=delpoyment_body_metadata, 
+            spec=deployment_body_spec
+        )
+
+        # --- CREATE DEPLOYMENT
+        core_v1.create_namespaced_deployment(
+            namespace=given_namespace_name, 
+            body=body
+        )
+
+        # NOTE: wait until all the pods are in ready state    
+        try:
+            retry_check_pod_status(apps_v1, given_namespace_name)
+        except:
+            logging.info('---- Environment Failed to Initialize. Deleting Allocated Resources... ----')
+            delete_k8_deployment(given_namespace_name)
+            raise Exception
+
+        logging.info('---- Deployment Successfully Created ----')
+
 
 def delete_k8_deployment(given_namespace_name):
     # --- Deleting namespace at the end deletes all the related pods
     apps_v1 = client.CoreV1Api()
     apps_v1.delete_namespace(name=given_namespace_name)
     logging.info('---- Namespace Successfully Deleted ----')
+
 
 @retry(
     wait=wait_fixed(2),
