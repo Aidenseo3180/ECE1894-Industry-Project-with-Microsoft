@@ -17,7 +17,7 @@ RUN apk add gcc musl-dev libffi-dev \
 # pod_socketserver.py to instantiate gateway through sockets
 # conftest.py includes custom options
 WORKDIR /code
-COPY conftest.py poetry.lock pyproject.toml /src/ms_socketserver.py /code/
+COPY conftest.py poetry.lock pyproject.toml /code/
 
 # project initialization
 RUN poetry config virtualenvs.create false \

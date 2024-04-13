@@ -16,28 +16,31 @@ from pathlib import Path
 import socket
 from time import sleep
 
+
 process_list = []  # list of subprocesses responsible for port-forwarding
-ws_list = []  # list of streams for each pod
+ws_list = []  # list of streams for each pod'
+
 
 def pytest_xdist_setupnodes(config: pytest.Config, specs: list[XSpec]):
 
     if config.option.ktx != "pod":
         return
-
+    
     # **********
     # * Set up *
     # **********
     global selected_namespace
     list_of_test_files = config.option.file_or_dir   # List of pytest files to run provided through the terminal
     list_of_test_files.append("src/Constants.py")    # Move Constants.py file because it's used by conftest.py in docker image
-    custom_image = config.option.custom_image
+    list_of_test_files.append("src/ms_socketserver.py")
+    custom_image_list = config.option.custom_image.split(',')
     selected_namespace = config.option.namespace
 
     if selected_namespace == NAMESPACE_NAME:
         selected_namespace = selected_namespace + '-' + str(uuid.uuid4())
   
     num_pods = len(specs)
-    generate_k8_pods(given_custom_image=custom_image, given_namespace_name=selected_namespace, num_pods=num_pods, list_filename=list_of_test_files) 
+    generate_k8_pods(given_custom_images=custom_image_list, given_namespace_name=selected_namespace, num_pods=num_pods, list_filename=list_of_test_files) 
 
     # ***************************
     # * Communication with Pods *
@@ -84,7 +87,7 @@ def pytest_xdist_setupnodes(config: pytest.Config, specs: list[XSpec]):
 
         # NOTE: Run the server.py from each pod to listen to localhost
         commands = [
-            "python /code/ms_socketserver.py :{}".format(assigned_port)
+            "python /code/src/ms_socketserver.py :{}".format(assigned_port)
         ]
         while ws.is_open():
             ws.update(timeout=1)
