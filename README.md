@@ -1,28 +1,24 @@
-# ECE1894-Industry-Project-with-Microsoft  
-Microsoft project on PyPi for ECE1894 Industry project course in Spring 2024 at University of Pittsburgh.  
-  
-### Usage  
-How to set up the k3d cluster environment for pytest :  
-First, build the docker image  
+# Pytest-xdist-kubernetes
+
+The pytest-xdist-plugin extends pytest-xdist with new kubernetes pod communication.
+```bash
+pytest {testfiles to run} -n {number of pods per deployment} --ktx='pod'
 ```
-docker build -t {name of image}:{tag} {location of dockerfile}
+On top of the existing pytest-xdist library, various options have been added to support running pytest from kubernetes pods.
+```bash
+pytest --namespace='custom namspace' --custom_image='testfiles to run' -n {number of pods per deployment} --ktx='pod'
 ```
-Then, import the docker image from the docker registry to the k3d cluster  
+Logger is included as part of the functions added by the plugin. You can check the progress of the plugin by specifying:
+```bash
+--log-cli-level INFO
 ```
-k3d image import {name of image} -c {name of existing cluster}
+
+## How to install
+In order to use the plugin, >= Python 3.9 is required. Can be installed with the following command:  
+```bash
+pip install pytest-xdist-kubernetes
 ```
-Finally, give namespace and custon image to run the pytest  
-```
-pytest --log-cli-level {info level} --namespace={namespace} --custom_image={name of custom image} {location of the test file}
-```
-  
-Copying a file from a local storage to a pod :  
-```
-kubectl cp {location of the file>} {Where in the pod you want it to be}
-```
-To execute the pytest that pod contains :  
-```
-kubectl exec {name of a pod} -- pytest {location of the pytest file in pod}
-```
-### Reference
+
+## Reference
+The plugin uses Kubernetes API to create/delete kubernetes pods.
 https://github.com/kubernetes-client/python/blob/master/kubernetes/README.md

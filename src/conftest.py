@@ -1,5 +1,5 @@
-from Constants import NAMESPACE_NAME
-from k8_client import generate_k8_pods, delete_k8_deployment
+from .Constants import NAMESPACE_NAME
+from .k8_client import generate_k8_pods, delete_k8_deployment
 import logging
 import pytest
 import xdist
@@ -17,15 +17,18 @@ import socket
 from time import sleep
 import platform
 
-
 process_list = []  # list of subprocesses responsible for port-forwarding
 ws_list = []  # list of streams for each pod'
-
 
 def pytest_xdist_setupnodes(config: pytest.Config, specs: list[XSpec]):
 
     if config.option.ktx != "pod":
         return
+    
+    # global process_list
+    # process_list = []  # list of subprocesses responsible for port-forwarding
+    # global ws_list 
+    # ws_list = []  # list of streams for each pod'
     
     # **********
     # * Set up *
