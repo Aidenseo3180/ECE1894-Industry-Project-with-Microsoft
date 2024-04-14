@@ -1,28 +1,32 @@
-# ECE1894-Industry-Project-with-Microsoft  
-Microsoft project on PyPi for ECE1894 Industry project course in Spring 2024 at University of Pittsburgh.  
+# Pytest-xdist-kubernetes
   
-### Usage  
-How to set up the k3d cluster environment for pytest :  
-First, build the docker image  
+The pytest-xdist-plugin extends pytest-xdist with new kubernetes pod communication. It is capable of creating Kubernetes deployment using the given namespace and docker image, run tests from pods, and display the result at the end from the terminal.  
+
+## How to Install
+In order to use the plugin, >= Python 3.9 is required. Can be installed with the following command:  
+```bash
+pip install pytest-xdist-kubernetes
 ```
-docker build -t {name of image}:{tag} {location of dockerfile}
+
+## How to Use
+By giving <code>--tx='pod'</code> as part of the xdist command, it triggers Pytest-xdist-kubernetes plugin.
+```bash
+pytest {test files to run} -n {number of pods per deployment} --tx='pod'
 ```
-Then, import the docker image from the docker registry to the k3d cluster  
+On top of the existing pytest-xdist library, various options have been added to support running tests from kubernetes pods remotely.
+```bash
+pytest --namespace='custom namspace' --custom_image='custom image' {test files to run} -n {number of pods per deployment} --tx='pod'
 ```
-k3d image import {name of image} -c {name of existing cluster}
+Logger is included as part of the functions added by the plugin. You can check the progress of the plugin by specifying:
+```bash
+--log-cli-level INFO
+```  
+Since the plugin relies on xdist library's task scheduler for distributing tasks, you can specify how you would like to distribute tasks across multiple pods. By default, it evenly distributes test files.  
+But if you would like each pod to run all the specified test files:
+```bash
+pytest {testfiles to run} -n {number of pods per deployment} --tx='pod' --dist=each
 ```
-Finally, give namespace and custon image to run the pytest  
-```
-pytest --log-cli-level {info level} --namespace={namespace} --custom_image={name of custom image} {location of the test file}
-```
-  
-Copying a file from a local storage to a pod :  
-```
-kubectl cp {location of the file>} {Where in the pod you want it to be}
-```
-To execute the pytest that pod contains :  
-```
-kubectl exec {name of a pod} -- pytest {location of the pytest file in pod}
-```
-### Reference
+
+## Reference
+The plugin uses Kubernetes API to create/delete kubernetes deployments.  
 https://github.com/kubernetes-client/python/blob/master/kubernetes/README.md

@@ -1,39 +1,36 @@
-from Constants import NAMESPACE_NAME
-from k8_client import generate_k8_pods, delete_k8_deployment
+from .Constants import NAMESPACE_NAME
+from .k8_client import generate_k8_pods, delete_k8_deployment
 import logging
 import pytest
 import xdist
-import xdist.workermanage
 from kubernetes import client
 from kubernetes import config as kubectl_config
 from kubernetes.stream import stream
 import uuid
 import subprocess
-import os
-import signal
 from execnet import XSpec
 from pathlib import Path
 import socket
 from time import sleep
-import platform
-
-
-process_list = []  # list of subprocesses responsible for port-forwarding
-ws_list = []  # list of streams for each pod'
 
 
 def pytest_xdist_setupnodes(config: pytest.Config, specs: list[XSpec]):
 
-    if config.option.ktx != "pod":
+    if config.known_args_namespace.tx[0] != 'pod':
         return
+    
+    global process_list # list of subprocesses responsible for port-forwarding
+    process_list = []
+    global ws_list      # list of streams for each pod' 
+    ws_list = []
     
     # **********
     # * Set up *
     # **********
     global selected_namespace
-    list_of_test_files = config.option.file_or_dir   # List of pytest files to run provided through the terminal
-    list_of_test_files.append("src/Constants.py")    # Move Constants.py file because it's used by conftest.py in docker image
-    list_of_test_files.append("src/ms_socketserver.py")
+    list_of_test_files = config.option.file_or_dir      # List of pytest files to run provided through the terminal
+    list_of_test_files.append("src/Constants.py")       # Move Constants.py file because it's used by conftest.py in docker image
+    list_of_test_files.append("src/ms_socketserver.py") # Move server.py that will run from the pod
     custom_image_list = config.option.custom_image.split(',')
     selected_namespace = config.option.namespace
 
@@ -57,15 +54,20 @@ def pytest_xdist_setupnodes(config: pytest.Config, specs: list[XSpec]):
 
         # Create a stream
         exec_command = ['/bin/sh']
-        ws = stream(
-            api_instance.connect_get_namespaced_pod_exec,
-            k8_pod_name, selected_namespace,
-            command=exec_command,
-            stderr=True, stdin=True,
-            stdout=True, tty=False,
-            _preload_content=False
-        )
-        ws_list.append(ws)
+        try:
+            ws = stream(
+                api_instance.connect_get_namespaced_pod_exec,
+                k8_pod_name, selected_namespace,
+                command=exec_command,
+                stderr=True, stdin=True,
+                stdout=True, tty=False,
+                _preload_content=False
+            )
+            ws_list.append(ws)
+        except:
+            logging.info('---- Stream cannot be generated. Make sure that the pod is running ----')
+            delete_k8_deployment(selected_namespace)
+            raise Exception
 
         # Remote address - localhost : TCP port pair
         peer_pair = ws.sock.sock.getpeername()
@@ -78,11 +80,16 @@ def pytest_xdist_setupnodes(config: pytest.Config, specs: list[XSpec]):
         s.close()
 
         # NOTE: Running port-forward in background, give os.setsid to fully delete the thread at the end
-        process = subprocess.Popen(
-            ["kubectl", "port-forward", "{}".format(k8_pod_name), "--namespace", "{}".format(selected_namespace), "{}:{}".format(available_port, assigned_port)],
-            start_new_session=True
-        )
-        process_list.append(process)
+        try:
+            process = subprocess.Popen(
+                ["kubectl", "port-forward", "{}".format(k8_pod_name), "--namespace", "{}".format(selected_namespace), "{}:{}".format(available_port, assigned_port)],
+                start_new_session=True
+            )
+            process_list.append(process)
+        except:
+            logging.info('---- Subprocess cannot be created. Check if the port is already occupied ----')
+            delete_k8_deployment(selected_namespace)
+            raise Exception
 
         logging.info("Subprocess running for port-forwarding")
 
@@ -118,15 +125,12 @@ def pytest_sessionfinish(session):
     # NOTE: If controller, clean the allocated resources
     if xdist.is_xdist_controller(session):
 
-        if session.config.option.ktx != "pod":
+        if session.config.known_args_namespace.tx[0] != 'pod':
             return
 
         # Kill process and child processes
         for process in process_list:
-            if platform.system() == 'Windows':
-                process.kill()
-            else:
-                os.killpg(os.getpgid(process.pid), signal.SIGTERM)
+            process.kill()
 
         # Close the stream
         for ws in ws_list:
