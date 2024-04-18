@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pxk"
-version = "0.0.2"
+version = "0.0.3"
 authors = [
     "Aiden Seo <minwoo3180@gmail.com>", 
     "Daniel Stoller <danhstoller@gmail.com>", 
