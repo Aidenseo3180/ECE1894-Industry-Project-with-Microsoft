@@ -1,11 +1,17 @@
 [tool.poetry]
 name = "pxk"
 version = "0.0.1"
+authors = [
+    "Aiden Seo <minwoo3180@gmail.com>", 
+    "Daniel Stoller <danhstoller@gmail.com>", 
+    "Dominique Pantin <dompantin@gmail.com>",
+]
 description = "Automate the process of distributed testing on a Kubernetes cluster by extending the functionality of pytest-xdist, allowing users to efficiently run tests in parallel across multiple pods."
-authors = ["Aiden <minwoo3180@gmail.com>, Daniel <danhstoller@gmail.com>, Dominique <dompantin@gmail.com>"]
 readme = "README.md"
 license = "MIT"
-classifiers = ["Framework :: Pytest"]
+classifiers = [
+    "Framework :: Pytest"
+]
 
 [tool.poetry.dependencies]
 python = "^3.9"
