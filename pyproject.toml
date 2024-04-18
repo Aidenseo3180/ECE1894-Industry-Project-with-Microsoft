@@ -1,9 +1,17 @@
 [tool.poetry]
-name = "industry"
+name = "pxk"
 version = "0.0.1"
-description = "industry project tool"
-authors = ["Aiden <minwoo3180@gmail.com>"]
+authors = [
+    "Aiden Seo <minwoo3180@gmail.com>", 
+    "Daniel Stoller <danhstoller@gmail.com>", 
+    "Dominique Pantin <dompantin@gmail.com>",
+]
+description = "Automate the process of distributed testing on a Kubernetes cluster by extending the functionality of pytest-xdist, allowing users to efficiently run tests in parallel across multiple pods."
 readme = "README.md"
+license = "MIT"
+classifiers = [
+    "Framework :: Pytest"
+]
 
 [tool.poetry.dependencies]
 python = "^3.9"
@@ -13,7 +21,9 @@ kubernetes = "^29.0.0"
 tenacity = "^8.2.3"
 execnet = "^2.1.1"
 
-
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.plugins.pytest11]
+pxk = "pxk.plugin"

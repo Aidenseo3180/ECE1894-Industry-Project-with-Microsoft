@@ -5,7 +5,7 @@ import uuid
 from tenacity import retry, stop_after_attempt, wait_fixed
 
 
-def generate_k8_pods(given_custom_images, given_namespace_name, num_pods, list_filename):
+def generate_k8_pods(given_custom_images, given_namespace_name, num_pods, list_filename, file_dir):
     # NOTE: Assuming image and cluster already exist
 
     config.load_kube_config()
@@ -25,7 +25,7 @@ def generate_k8_pods(given_custom_images, given_namespace_name, num_pods, list_f
     except Exception:
         # return immediately if given namespace already exists OR environment setup is incorrect (ex. doesn't have running cluster with image)
         logging.info('---- Creation Failed.... Terminating ----')
-        return False
+        raise Exception
 
     # --- Namespace creation
     logging.info('---- Namespace Successfully Added ----')
@@ -102,7 +102,7 @@ def generate_k8_pods(given_custom_images, given_namespace_name, num_pods, list_f
         volume_mount_list = []
         volume_mount1 = client.V1VolumeMount(
             name='config-volume',
-            mount_path='/code/src'
+            mount_path=f'/code/{file_dir}'
         )
         volume_mount_list.append(volume_mount1)
 
@@ -202,7 +202,7 @@ def delete_k8_deployment(given_namespace_name):
 
 
 @retry(
-    wait=wait_fixed(2),
+    wait=wait_fixed(5),
     stop=stop_after_attempt(10)
 )
 def retry_check_pod_status(apps_v1, given_namespace_name):
