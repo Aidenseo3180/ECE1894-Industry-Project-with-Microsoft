@@ -5,7 +5,7 @@ The pytest-xdist-plugin extends pytest-xdist with new kubernetes pod communicati
 ## How to Install
 In order to use the plugin, >= Python 3.9 is required. Can be installed with the following command:  
 ```bash
-pip install pytest-xdist-kubernetes
+pip install pxk
 ```
 
 ## How to Use
@@ -15,7 +15,7 @@ pytest {test files to run} -n {number of pods per deployment} --tx='pod'
 ```
 On top of the existing pytest-xdist library, various options have been added to support running tests from kubernetes pods remotely.
 ```bash
-pytest --namespace='custom namspace' --custom_image='custom image' {test files to run} -n {number of pods per deployment} --tx='pod'
+pytest --namespace='{custom namspace}' --custom_image='{custom image}' {test files to run} -n {number of pods per deployment} --tx='pod'
 ```
 Logger is included as part of the functions added by the plugin. You can check the progress of the plugin by specifying:
 ```bash
@@ -26,7 +26,7 @@ But if you would like each pod to run all the specified test files:
 ```bash
 pytest {testfiles to run} -n {number of pods per deployment} --tx='pod' --dist=each
 ```
-
+All the testfiles must be from the same folder. The plugin still needs to be tested in Windows OS.
 ## Reference
 The plugin uses Kubernetes API to create/delete kubernetes deployments.  
 https://github.com/kubernetes-client/python/blob/master/kubernetes/README.md
