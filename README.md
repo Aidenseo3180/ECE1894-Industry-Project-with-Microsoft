@@ -17,9 +17,9 @@ On top of the existing pytest-xdist library, various options have been added to 
 ```bash
 pytest --namespace='{custom namspace}' --custom_image='{custom image}' {test files to run} -n {number of pods per deployment} --tx='pod'
 ```
-When there are multiple images, multiple deployments get created and each deployment will contain its own image. The plugin will then try its best to evenly distribute the workers as much as possible. If the number of workers is less than the number of custom images, an exception would occur. Multiple custom images can be provided through the command:
+When there are multiple images, multiple deployments get created and each deployment will contain its own image. The plugin will then try its best to evenly distribute the workers as much as possible. If the number of workers is less than the number of custom images, an exception would occur. Multiple custom images can be provided through the command without spaces in between files:
 ```bash
-pytest --namespace='{custom namspace}' --custom_image='{custom image1,custom image1}' {test files to run} -n {number of pods per deployment} --tx='pod'
+pytest --namespace='{custom namspace}' --custom_image='{custom image1,custom image2}' {test files to run} -n {number of pods per deployment} --tx='pod'
 ```
 Logger is included as part of the functions added by the plugin. You can check the progress of the plugin by specifying:
 ```bash
