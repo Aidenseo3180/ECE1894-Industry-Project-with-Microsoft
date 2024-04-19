@@ -19,7 +19,7 @@ pytest --namespace='{custom namspace}' --custom_image='{custom image}' {test fil
 ```
 When there are multiple images, multiple deployments get created and each deployment will contain its own image. The plugin will then try its best to evenly distribute the workers as much as possible. If the number of workers is less than the number of custom images, an exception would occur. Multiple custom images can be provided through the command:
 ```bash
-pytest --namespace='{custom namspace}' --custom_image='{custom image1, custom image1}' {test files to run} -n {number of pods per deployment} --tx='pod'
+pytest --namespace='{custom namspace}' --custom_image='{custom image1,custom image1}' {test files to run} -n {number of pods per deployment} --tx='pod'
 ```
 Logger is included as part of the functions added by the plugin. You can check the progress of the plugin by specifying:
 ```bash
